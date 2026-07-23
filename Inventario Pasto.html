@@ -5,42 +5,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventario Pasto</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,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">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f3f1fb;
+  --bg:#f6f5f8;
   --card:#ffffff;
-  --primary:#6d4fe0;
-  --primary-dark:#5636c4;
-  --accent:#ff8a5c;
-  --text:#2b2740;
-  --text-soft:#6b6580;
-  --border:#e6e2f5;
+  --primary:#af62ff;
+  --primary-dark:#8f3fe6;
+  --ink:#000000;
+  --text:#1a1a1a;
+  --text-soft:#6b6b6b;
+  --border:#e7e3ee;
   --danger:#e5484d;
   --danger-bg:#fdeceb;
   --success:#2e9e5b;
   --radius:14px;
-  --shadow:0 4px 18px rgba(70,50,150,0.08);
+  --shadow:0 4px 18px rgba(0,0,0,0.08);
+  --font-heading:'Playfair Display', Georgia, serif;
+  --font-body:'Raleway', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 *{box-sizing:border-box;}
 body{
   margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-family:var(--font-body);
   background:var(--bg);
   color:var(--text);
 }
+h1, h2{ font-family:var(--font-heading); }
 header{
-  background:linear-gradient(120deg,var(--primary),#9b7bff);
+  background:var(--ink);
   color:#fff;
   padding:22px 20px 70px;
+  position:relative;
+}
+header::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:4px;
+  background:var(--primary);
 }
 header h1{
-  margin:0 0 4px;
-  font-size:1.5rem;
+  margin:0 0 6px;
+  font-size:1.6rem;
+  font-weight:700;
+  letter-spacing:.3px;
 }
 header p{
   margin:0;
-  opacity:.85;
+  opacity:.8;
   font-size:.9rem;
+  font-family:var(--font-body);
 }
 .wrap{
   max-width:1200px;
@@ -154,8 +171,9 @@ header p{
 .card-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px;flex:1;}
 .card-name{font-size:.88rem;font-weight:600;line-height:1.25;}
 .card-cat{
-  font-size:.68rem;color:var(--primary);background:#f0ecff;
+  font-size:.68rem;color:var(--primary-dark);background:#f4ebff;
   padding:2px 8px;border-radius:20px;align-self:flex-start;
+  font-weight:600;
 }
 .qty-row{
   margin-top:auto;
@@ -181,7 +199,7 @@ header p{
   background:#fff;border-radius:16px;max-width:480px;width:100%;
   padding:22px;margin:20px 0 40px;
 }
-.modal h2{margin:0 0 16px;font-size:1.2rem;}
+.modal h2{margin:0 0 16px;font-size:1.25rem;padding-left:12px;border-left:4px solid var(--primary);}
 .field{margin-bottom:13px;}
 .field label{display:block;font-size:.78rem;color:var(--text-soft);margin-bottom:4px;font-weight:600;}
 .field input[type=text], .field input[type=number], .field textarea, .field select{
