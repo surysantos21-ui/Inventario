@@ -311,75 +311,84 @@ header p{
 </div>
 
 <div class="toast" id="toast"></div>
+<div id="connStatus" style="position:fixed;top:10px;right:10px;font-size:.72rem;padding:4px 10px;border-radius:20px;background:#fff;box-shadow:var(--shadow);color:var(--text-soft);z-index:300;">Conectando…</div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <script>
-/* ---------- Datos iniciales (importados de INVENTARIO PASTO.xlsx) ---------- */
+/* ---------- Datos iniciales (importados de INVENTARIO PASTO.xlsx, solo se usan si la base está vacía) ---------- */
 const SEED_DATA = [{"id": 1, "name": "Jabon Liquido", "category": "Insumos de Aseo", "quantity": 8, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 2, "name": "Pares de Guantes", "category": "Insumos de Aseo", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 3, "name": "Bolsas Rojas", "category": "Insumos de Aseo", "quantity": 7, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 4, "name": "Piso Madera", "category": "Insumos de Aseo", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 5, "name": "Toallas de Manos", "category": "Insumos de Aseo", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 6, "name": "Bolsas para canecas peq", "category": "Insumos de Aseo", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 7, "name": "Cafe", "category": "Insumos de Aseo", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 8, "name": "Bolsas grandes", "category": "Insumos de Aseo", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 9, "name": "Limpia Vidrios", "category": "Insumos de Aseo", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 10, "name": "Cera piso", "category": "Insumos de Aseo", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 11, "name": "Clorox", "category": "Insumos de Aseo", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 12, "name": "Bolsas Grandes detergente", "category": "Insumos de Aseo", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 13, "name": "Kit MAQUILLAJE", "category": "Kits por Curso", "quantity": 29, "unit": "und", "minStock": 0, "notes": "Intranet: 29.0, Diferencia: 0 | Llegarón 8 el 10/07/2026 pero no tenemos #orden para darle recibido, se suben al global", "photo": null}, {"id": 14, "name": "Kit ESTILISMO", "category": "Kits por Curso", "quantity": 9, "unit": "und", "minStock": 0, "notes": "Intranet: 8.0, Diferencia: -1", "photo": null}, {"id": 15, "name": "Kit MANICURE", "category": "Kits por Curso", "quantity": 8, "unit": "und", "minStock": 0, "notes": "Intranet: 8.0, Diferencia: 0", "photo": null}, {"id": 16, "name": "Kit PEINADOS", "category": "Kits por Curso", "quantity": 7, "unit": "und", "minStock": 0, "notes": "Intranet: 14.0, Diferencia: 7", "photo": null}, {"id": 17, "name": "Kit CEJAS", "category": "Kits por Curso", "quantity": 9, "unit": "und", "minStock": 0, "notes": "Intranet: 8.0, Diferencia: -1", "photo": null}, {"id": 18, "name": "Camisa Mujer Talla S", "category": "Uniformes - Camisa Mujer", "quantity": 27, "unit": "und", "minStock": 0, "notes": "En sede: 18.0, Enviadas: 9 | 1 NEGRA", "photo": null}, {"id": 19, "name": "Camisa Mujer Talla M", "category": "Uniformes - Camisa Mujer", "quantity": 25, "unit": "und", "minStock": 0, "notes": "En sede: 25.0, Enviadas: 0", "photo": null}, {"id": 20, "name": "Camisa Mujer Talla L", "category": "Uniformes - Camisa Mujer", "quantity": 21, "unit": "und", "minStock": 0, "notes": "En sede: 16.0, Enviadas: 5", "photo": null}, {"id": 21, "name": "Camisa Mujer Talla XL", "category": "Uniformes - Camisa Mujer", "quantity": 15, "unit": "und", "minStock": 0, "notes": "En sede: 6.0, Enviadas: 9", "photo": null}, {"id": 22, "name": "Camisa Mujer Talla XXL", "category": "Uniformes - Camisa Mujer", "quantity": 3, "unit": "und", "minStock": 0, "notes": "En sede: 3.0, Enviadas: 0", "photo": null}, {"id": 23, "name": "Camisa Mujer Talla 3XL", "category": "Uniformes - Camisa Mujer", "quantity": 3, "unit": "und", "minStock": 0, "notes": "En sede: 3.0, Enviadas: 0", "photo": null}, {"id": 24, "name": "Camisa Mujer Talla 6XL", "category": "Uniformes - Camisa Mujer", "quantity": 2, "unit": "und", "minStock": 0, "notes": "En sede: 2.0, Enviadas: 0", "photo": null}, {"id": 25, "name": "Camisa Hombre Talla S", "category": "Uniformes - Camisa Hombre", "quantity": 26, "unit": "und", "minStock": 0, "notes": "En sede: 5.0, Enviadas: 21", "photo": null}, {"id": 26, "name": "Camisa Hombre Talla M", "category": "Uniformes - Camisa Hombre", "quantity": 18, "unit": "und", "minStock": 0, "notes": "En sede: 5.0, Enviadas: 13", "photo": null}, {"id": 27, "name": "Camisa Hombre Talla L", "category": "Uniformes - Camisa Hombre", "quantity": 21, "unit": "und", "minStock": 0, "notes": "En sede: 8.0, Enviadas: 13", "photo": null}, {"id": 28, "name": "Camisa Hombre Talla XL", "category": "Uniformes - Camisa Hombre", "quantity": 21, "unit": "und", "minStock": 0, "notes": "En sede: 5.0, Enviadas: 16", "photo": null}, {"id": 29, "name": "Camisa Hombre Talla XXL", "category": "Uniformes - Camisa Hombre", "quantity": 2, "unit": "und", "minStock": 0, "notes": "En sede: 2.0, Enviadas: 0", "photo": null}, {"id": 30, "name": "Camisa Hombre Talla 3XL", "category": "Uniformes - Camisa Hombre", "quantity": 5, "unit": "und", "minStock": 0, "notes": "En sede: 5.0, Enviadas: 0", "photo": null}, {"id": 31, "name": "Guantes", "category": "Cabello y Coloración", "quantity": 7, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 32, "name": "Tapa Bocas", "category": "Cabello y Coloración", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 33, "name": "Papel aluminio", "category": "Cabello y Coloración", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 34, "name": "Papel transparente", "category": "Cabello y Coloración", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 35, "name": "Paños Wypall cuaradas", "category": "Cabello y Coloración", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 36, "name": "Paños Wypall Redondo", "category": "Cabello y Coloración", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 37, "name": "Cocas para tinte", "category": "Cabello y Coloración", "quantity": 7, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 38, "name": "Pinza Caiman", "category": "Cabello y Coloración", "quantity": 11, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 39, "name": "Pinza cocodrilo", "category": "Cabello y Coloración", "quantity": 11, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 40, "name": "SHAMPOO LT", "category": "Cabello y Coloración", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 41, "name": "PEROXIDO DE 30 LT", "category": "Cabello y Coloración", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 42, "name": "MATIZANTE", "category": "Cabello y Coloración", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 43, "name": "SHAMPOO PROTECCION COLOR LT", "category": "Cabello y Coloración", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 44, "name": "LINEA DE TRATAMIENTOS SARVAI HAIR X 4 UND", "category": "Cabello y Coloración", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 45, "name": "CAPAS ANTIFLUIDO PARA ESTLISMO", "category": "Cabello y Coloración", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 46, "name": "GORROS DE SILICONA", "category": "Cabello y Coloración", "quantity": 6, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 47, "name": "PEINILLAS COLA RATA METAL", "category": "Cabello y Coloración", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 48, "name": "PEINILLA CARDADORA", "category": "Cabello y Coloración", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 49, "name": "BROCHA", "category": "Cabello y Coloración", "quantity": 7, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 50, "name": "OXIGENTA DE 100 ML", "category": "Cabello y Coloración", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 51, "name": "TINTES COLOR 5", "category": "Cabello y Coloración", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 52, "name": "TINTE COLOR 1-66", "category": "Cabello y Coloración", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 53, "name": "TINTE COLOR 11", "category": "Cabello y Coloración", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 54, "name": "TINTE COLOR 33", "category": "Cabello y Coloración", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 55, "name": "KIT DE PEINETAS", "category": "Cabello y Coloración", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 56, "name": "LECHE PARA EL PELO", "category": "Cabello y Coloración", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 57, "name": "TERMOPROTECTOR", "category": "Cabello y Coloración", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 58, "name": "YELLOW PROFESIONAL 500 GR (BLONDOR)", "category": "Cabello y Coloración", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 59, "name": "CEPILLOS MEDIANOS", "category": "Cabello y Coloración", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 60, "name": "CEPILLO PAQUETE", "category": "Cabello y Coloración", "quantity": 11, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 61, "name": "CEPILLOS PEQUEÑOS", "category": "Cabello y Coloración", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 62, "name": "CEPILLO GRANDE", "category": "Cabello y Coloración", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 63, "name": "BALSAMO LT", "category": "Cabello y Coloración", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 64, "name": "GRAMERA", "category": "Cabello y Coloración", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 65, "name": "CUELLEROS", "category": "Barbería", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 66, "name": "LACA LIQUIDA", "category": "Barbería", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 67, "name": "LACA EN CREMA", "category": "Barbería", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 68, "name": "NISH MAN", "category": "Barbería", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 69, "name": "GEL", "category": "Barbería", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 70, "name": "NISH MAN CREMA", "category": "Barbería", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 71, "name": "COOL & CLEANER", "category": "Barbería", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 72, "name": "BLACK MASK", "category": "Barbería", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 73, "name": "FIBRA CAPILAR", "category": "Barbería", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 74, "name": "ATOMIZADORES", "category": "Barbería", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 75, "name": "COLONIA", "category": "Barbería", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 76, "name": "SET DE PEINILLAS X 10", "category": "Barbería", "quantity": 10, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 77, "name": "TIJERAS DE BARBERIA", "category": "Barbería", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 78, "name": "CUCHILLAS", "category": "Barbería", "quantity": 1, "unit": "und", "minStock": 0, "notes": "Ref: 4 1/2", "photo": null}, {"id": 79, "name": "TALCO", "category": "Barbería", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 80, "name": "LIMAS SPONGY", "category": "Manicure y Uñas", "quantity": 6, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 81, "name": "COTTON PADS X 150 UD", "category": "Manicure y Uñas", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 82, "name": "REMOVEDOR X 500ML", "category": "Manicure y Uñas", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 83, "name": "EXFOLIANTES", "category": "Manicure y Uñas", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 84, "name": "CORTA CUTICULAS", "category": "Manicure y Uñas", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 85, "name": "PINCELES LINER", "category": "Manicure y Uñas", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 86, "name": "LIMAS 180", "category": "Manicure y Uñas", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 87, "name": "PALITOS DE NARANJA", "category": "Manicure y Uñas", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 88, "name": "TIPS CURVAS", "category": "Manicure y Uñas", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 89, "name": "LLAVERO DE UÑA", "category": "Manicure y Uñas", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 90, "name": "BLOQUES PULIDORES", "category": "Manicure y Uñas", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 91, "name": "PEGANTE", "category": "Manicure y Uñas", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 92, "name": "LIMA TRADICIONAL 1 144 UNDS", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 93, "name": "ESMALTE TRADICIONAL", "category": "Manicure y Uñas", "quantity": 7, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 94, "name": "ESMALTE SEMIPERMANENTE AMARILLO", "category": "Manicure y Uñas", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 95, "name": "ESMALTE SEMIPERMANENTE AZUL", "category": "Manicure y Uñas", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 96, "name": "ESMALTE SEMIPERMANENTE ROJO", "category": "Manicure y Uñas", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 97, "name": "ESMALTE BRILLO", "category": "Manicure y Uñas", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 98, "name": "GEL REMOVEDOR", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 99, "name": "TOP COAT", "category": "Manicure y Uñas", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 100, "name": "RUBBER BASE COLOR", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 101, "name": "BASE COAT", "category": "Manicure y Uñas", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 102, "name": "PROTEING BOLD", "category": "Manicure y Uñas", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 103, "name": "ESMALTE BLANCO", "category": "Manicure y Uñas", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 104, "name": "ESMALTE NEGRO", "category": "Manicure y Uñas", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 105, "name": "ESMALTE SEMI TRANSLUCIDO", "category": "Manicure y Uñas", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 106, "name": "BASE COAT MIRACLE", "category": "Manicure y Uñas", "quantity": 6, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 107, "name": "DILUSOR DE ESMALTE", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 108, "name": "COLAS DE SIRENAS", "category": "Manicure y Uñas", "quantity": 7, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 109, "name": "TORRE EFECTO ESPEJO", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 110, "name": "PAPEL ORO PQ", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 111, "name": "MONOMERO", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 112, "name": "POLVO ACRILICO TRANSLUCIDO", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 113, "name": "PEGANTE PARA UÑA", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 114, "name": "ACRILICO PQ", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 115, "name": "PINZA DUAL SYSTEM", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 116, "name": "ESMALTE TRADICIONAL MASGLO", "category": "Manicure y Uñas", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 117, "name": "GEL PARA PIEDRAS", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 118, "name": "GUIYOTINA", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 119, "name": "PALILLOS", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 120, "name": "PINTURAS ACRILCAS X 12 UNDS", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 121, "name": "PAINTING GEL BLANCO", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 122, "name": "PAINTING GEL NEGRO", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 123, "name": "PROTEING BOLD", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 124, "name": "SEMI MASGLO PQ", "category": "Manicure y Uñas", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 125, "name": "SEMI MASGLO GR", "category": "Manicure y Uñas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 126, "name": "GEL POLISH", "category": "Manicure y Uñas", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 127, "name": "MORTEROS", "category": "Manicure y Uñas", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 128, "name": "MOLDES ROLLO", "category": "Manicure y Uñas", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 129, "name": "POMOS DE ALGODÓN", "category": "Maquillaje y Facial", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 130, "name": "AGUA DE ROSA 500 ML", "category": "Maquillaje y Facial", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 131, "name": "POLVO TRASLUCIDO", "category": "Maquillaje y Facial", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 132, "name": "MINI SPONGE X4 PEQUEÑAS", "category": "Maquillaje y Facial", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 133, "name": "AGUA TRIFASICA 125 ML", "category": "Maquillaje y Facial", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 134, "name": "LIP SERUM", "category": "Maquillaje y Facial", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 135, "name": "TOALLA DESMAQUILLANTES", "category": "Maquillaje y Facial", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 136, "name": "PALETA ATENA", "category": "Maquillaje y Facial", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 137, "name": "PALETA HAWAII", "category": "Maquillaje y Facial", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 138, "name": "BROCHAS X 10", "category": "Maquillaje y Facial", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 139, "name": "BRILLO PARA LABIOS", "category": "Maquillaje y Facial", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 140, "name": "SUERO COLAGENO Y VITAMINA E", "category": "Maquillaje y Facial", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 141, "name": "LAPIZ CICATRIZANTE", "category": "Maquillaje y Facial", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 142, "name": "ADHESIVO PARA CEJAS", "category": "Maquillaje y Facial", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 143, "name": "PARCHES HIDROGEL", "category": "Cejas y Pestañas", "quantity": 101, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 144, "name": "GORROS", "category": "Cejas y Pestañas", "quantity": 35, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 145, "name": "TINTA PARA CEJAS", "category": "Cejas y Pestañas", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 146, "name": "GEL FIJADOR", "category": "Cejas y Pestañas", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 147, "name": "LAPIZ CERADO", "category": "Cejas y Pestañas", "quantity": 9, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 148, "name": "MASCARA PRACTICA", "category": "Cejas y Pestañas", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 149, "name": "APLICADORES CEJAS X 50 UN", "category": "Cejas y Pestañas", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 150, "name": "APLICADORES PARA LABIOS", "category": "Cejas y Pestañas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 151, "name": "BLISTER DE PESTAÑAS 0.15D", "category": "Cejas y Pestañas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 152, "name": "BLISTER DE PESTAÑAS 0.15C", "category": "Cejas y Pestañas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 153, "name": "BLISTER DE PESTAÑAS 0.16D", "category": "Cejas y Pestañas", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 154, "name": "CERA 100GR", "category": "Cejas y Pestañas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 155, "name": "CERA FRIA 12 UN", "category": "Cejas y Pestañas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 156, "name": "PINCEADOL DELINE", "category": "Cejas y Pestañas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 157, "name": "PINZA PLANA", "category": "Cejas y Pestañas", "quantity": 6, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 158, "name": "PINZA PLANA CURVA", "category": "Cejas y Pestañas", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 159, "name": "DAMMAN EYELASH", "category": "Cejas y Pestañas", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 160, "name": "GUARDIANES", "category": "Peinados y Rizos", "quantity": 8, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 161, "name": "ALCOHOL", "category": "Peinados y Rizos", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 162, "name": "ESPUMA MOLDEADORA", "category": "Peinados y Rizos", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 163, "name": "BIGUDI PQ PELO CORTO", "category": "Peinados y Rizos", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 164, "name": "BIGUDI PQ PELO LARGO", "category": "Peinados y Rizos", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 165, "name": "MICROLINE SILICONADO", "category": "Peinados y Rizos", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 166, "name": "RULOS GRANDES X 4", "category": "Peinados y Rizos", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 167, "name": "RULOS MEDIANO X 6", "category": "Peinados y Rizos", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 168, "name": "RULOS PEQUEÑO X 6", "category": "Peinados y Rizos", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 169, "name": "GANCHOS HORQUILLA", "category": "Peinados y Rizos", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 170, "name": "ABRAZADERAS DECORA PQTE", "category": "Peinados y Rizos", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 171, "name": "CEPILLO PULIDOR", "category": "Peinados y Rizos", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 172, "name": "PIEDRERIA PARA PEINADOS", "category": "Peinados y Rizos", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}];
 
-/* ---------- IndexedDB ---------- */
-const DB_NAME = 'inventarioPastoDB';
-const STORE = 'products';
-let db;
+/* ---------- Firebase Realtime Database (compartida con todo el equipo) ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyBSFpaUxIxx02ArcVabsnR4lMDH7tRIjZw",
+  authDomain: "inventario-pasto.firebaseapp.com",
+  databaseURL: "https://inventario-pasto-default-rtdb.firebaseio.com",
+  projectId: "inventario-pasto",
+  storageBucket: "inventario-pasto.firebasestorage.app",
+  messagingSenderId: "727033202186",
+  appId: "1:727033202186:web:b854974cb9bbd6596d41f3",
+  measurementId: "G-MS000TVTWG"
+};
+firebase.initializeApp(firebaseConfig);
+const dbRef = firebase.database().ref('products');
 
-function openDB(){
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if(!d.objectStoreNames.contains(STORE)){
-        d.createObjectStore(STORE, {keyPath:'id'});
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-function store(mode){ return db.transaction(STORE, mode).objectStore(STORE); }
-function dbGetAll(){
-  return new Promise((resolve, reject) => {
-    const req = store('readonly').getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
 function dbPut(item){
-  return new Promise((resolve, reject) => {
-    const req = store('readwrite').put(item);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+  return dbRef.child(String(item.id)).set(item);
 }
 function dbDelete(id){
-  return new Promise((resolve, reject) => {
-    const req = store('readwrite').delete(id);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+  return dbRef.child(String(id)).remove();
 }
 function dbClear(){
-  return new Promise((resolve, reject) => {
-    const req = store('readwrite').clear();
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+  return dbRef.remove();
+}
+function dbSeedAll(items){
+  const updates = {};
+  items.forEach(p => { updates[p.id] = p; });
+  return dbRef.set(updates);
 }
 
 /* ---------- Estado ---------- */
 let products = [];
 let editingId = null;
 let currentPhoto = null;
+let firstLoad = true;
 
 const el = id => document.getElementById(id);
 
-async function init(){
-  db = await openDB();
-  products = await dbGetAll();
-  if(products.length === 0){
-    for(const p of SEED_DATA){ await dbPut(p); }
-    products = await dbGetAll();
-  }
+function init(){
   bindEvents();
-  render();
+
+  firebase.database().ref('.info/connected').on('value', snap => {
+    const badge = el('connStatus');
+    if(!badge) return;
+    if(snap.val() === true){
+      badge.textContent = '🟢 En vivo';
+      badge.style.color = 'var(--success)';
+    } else {
+      badge.textContent = '🔴 Sin conexión';
+      badge.style.color = 'var(--danger)';
+    }
+  });
+
+  dbRef.on('value', snapshot => {
+    const val = snapshot.val();
+    if(val === null){
+      if(firstLoad){
+        products = SEED_DATA;
+        dbSeedAll(SEED_DATA);
+      } else {
+        products = [];
+      }
+    } else {
+      products = Object.values(val);
+    }
+    firstLoad = false;
+    render();
+  }, err => {
+    showToast('No se pudo conectar con la base de datos');
+    console.error(err);
+  });
 }
 
 function nextId(){
@@ -477,13 +486,15 @@ function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-/* ---------- Cantidad rápida +/- ---------- */
+/* ---------- Cantidad rápida +/- (transacción atómica: segura si dos personas tocan a la vez) ---------- */
 async function changeQty(id, delta){
   const p = products.find(p=>p.id===id);
   if(!p) return;
-  p.quantity = Math.max(0, Number(p.quantity||0) + delta);
-  await dbPut(p);
-  render();
+  try{
+    await dbRef.child(String(id)).child('quantity').transaction(current => Math.max(0, (current||0) + delta));
+  }catch(err){
+    showToast('No se pudo actualizar (revisa tu conexión)');
+  }
 }
 
 /* ---------- Modal ---------- */
@@ -561,28 +572,26 @@ async function saveProduct(){
     notes: el('fNotes').value.trim(),
     photo: currentPhoto
   };
-  if(editingId){
-    data.id = editingId;
-    const idx = products.findIndex(p=>p.id===editingId);
-    products[idx] = data;
-  } else {
-    data.id = nextId();
-    products.push(data);
+  data.id = editingId || nextId();
+  try{
+    await dbPut(data);
+    closeModal();
+    showToast('Producto guardado');
+  }catch(err){
+    showToast('No se pudo guardar (revisa tu conexión)');
   }
-  await dbPut(data);
-  closeModal();
-  render();
-  showToast('Producto guardado');
 }
 
 async function deleteProduct(){
   if(!editingId) return;
-  if(!confirm('¿Eliminar este producto del inventario?')) return;
-  await dbDelete(editingId);
-  products = products.filter(p=>p.id!==editingId);
-  closeModal();
-  render();
-  showToast('Producto eliminado');
+  if(!confirm('¿Eliminar este producto del inventario? Se eliminará para todo el equipo.')) return;
+  try{
+    await dbDelete(editingId);
+    closeModal();
+    showToast('Producto eliminado');
+  }catch(err){
+    showToast('No se pudo eliminar (revisa tu conexión)');
+  }
 }
 
 /* ---------- Exportar / Importar ---------- */
@@ -618,11 +627,9 @@ function importJson(file){
     try{
       const data = JSON.parse(e.target.result);
       if(!Array.isArray(data)) throw new Error('formato inválido');
-      if(!confirm(`Se importarán ${data.length} productos y se reemplazará el inventario actual. ¿Continuar?`)) return;
+      if(!confirm(`Se importarán ${data.length} productos y se reemplazará el inventario actual para TODO el equipo. ¿Continuar?`)) return;
       await dbClear();
-      for(const p of data){ await dbPut(p); }
-      products = await dbGetAll();
-      render();
+      await dbSeedAll(data);
       showToast('Inventario importado');
     }catch(err){
       showToast('El archivo no es una copia de seguridad válida');
