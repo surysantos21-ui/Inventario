@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -35,7 +36,7 @@ body{
 }
 h1, h2{ font-family:var(--font-heading); }
 header{
-  background:var(--ink);
+  background:var(--primary-dark);
   color:#fff;
   padding:22px 20px 70px;
   position:relative;
@@ -95,12 +96,17 @@ header p{
 .toolbar input[type=text], .toolbar select{
   padding:10px 12px;
   border-radius:10px;
-  border:1px solid var(--border);
+  border:1.5px solid var(--primary);
   background:var(--card);
   font-size:.9rem;
   color:var(--text);
 }
 .toolbar input[type=text]{flex:1;min-width:180px;}
+.toolbar input[type=text]:focus, .toolbar select:focus{
+  outline:none;
+  border-color:var(--primary-dark);
+  box-shadow:0 0 0 3px rgba(175,98,255,.18);
+}
 .btn{
   border:none;
   border-radius:10px;
@@ -174,6 +180,10 @@ header p{
   font-size:.68rem;color:var(--primary-dark);background:#f4ebff;
   padding:2px 8px;border-radius:20px;align-self:flex-start;
   font-weight:600;
+}
+.card-iva{
+  font-size:.68rem;color:var(--text-soft);
+  font-weight:600;letter-spacing:.02em;
 }
 .qty-row{
   margin-top:auto;
@@ -269,6 +279,7 @@ header p{
         <button id="exportCsvBtn">⬇ Exportar a CSV</button>
         <label for="importInput">⬆ Importar copia de seguridad</label>
         <input type="file" id="importInput" accept="application/json" style="display:none;">
+        <button id="fixCategoriesBtn">🔧 Corregir categorías antiguas</button>
       </div>
     </div>
   </div>
@@ -300,8 +311,7 @@ header p{
     <div class="row2">
       <div class="field">
         <label>Categoría</label>
-        <input type="text" id="fCategory" list="categoryOptions" placeholder="Ej: Cabello y Coloración">
-        <datalist id="categoryOptions"></datalist>
+        <select id="fCategory"></select>
       </div>
       <div class="field">
         <label>Unidad</label>
@@ -319,8 +329,16 @@ header p{
       </div>
     </div>
     <div class="field">
+      <label>Registro INVIMA</label>
+      <input type="text" id="fInvima" placeholder="Ej: INVIMA NSO12345">
+    </div>
+    <div class="field">
       <label>Notas</label>
       <textarea id="fNotes" placeholder="Observaciones, proveedor, ubicación..."></textarea>
+    </div>
+    <div class="field" id="historyWrap" style="display:none;">
+      <label>Historial de entregas</label>
+      <div id="historyList" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:.82rem;background:#faf9fc;"></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-danger" id="deleteBtn" style="display:none;">Eliminar</button>
@@ -333,13 +351,31 @@ header p{
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="overlay" id="recipientOverlay">
+  <div class="modal" style="max-width:380px;">
+    <h2 style="margin:0 0 4px;">Registrar entrega</h2>
+    <p style="margin:0 0 14px;color:var(--text-soft);font-size:.9rem;" id="recipientProductLabel"></p>
+    <div class="field">
+      <label>¿A quién se le entrega?</label>
+      <input type="text" id="recipientName" placeholder="Nombre de quien recibe" autocomplete="off">
+      <div id="recipientError" style="color:var(--danger);font-size:.82rem;margin-top:4px;display:none;">Este campo es obligatorio.</div>
+    </div>
+    <div class="modal-actions">
+      <div class="right" style="width:100%;justify-content:flex-end;display:flex;gap:8px;">
+        <button class="btn btn-ghost" id="recipientCancelBtn">Cancelar</button>
+        <button class="btn btn-primary" id="recipientConfirmBtn">Confirmar entrega</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div id="connStatus" style="position:fixed;top:10px;right:10px;font-size:.72rem;padding:4px 10px;border-radius:20px;background:#fff;box-shadow:var(--shadow);color:var(--text-soft);z-index:300;">Conectando…</div>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <script>
 /* ---------- Datos iniciales (importados de INVENTARIO PASTO.xlsx, solo se usan si la base está vacía) ---------- */
-const SEED_DATA = [];
+const SEED_DATA = [{"id": 1, "name": "REMOVEDOR DE HENNA", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 2, "name": "SHAMPOS CEJAS", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 3, "name": "PINCEL CERADO", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 4, "name": "PINCELES LATE", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 5, "name": "REMOVEDORES DE PESTAÑAS", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 6, "name": "PINCELES BEIGE", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 7, "name": "TOALLAS HUMEDAS", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 8, "name": "FIJADOR PARA HENNA", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 9, "name": "VINIPEL", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 10, "name": "LADY BLACK", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 11, "name": "PRIMER 15 ML", "category": "INSUMOS DE MAQUILLAJE", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 12, "name": "BOOSTER MELON 15 ML", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 13, "name": "PARCHES", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 14, "name": "TINTES PARA HENNA", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 15, "name": "HENNAS INSTANTANEAS", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 6, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 16, "name": "HENNA LIPS 5 ML", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 17, "name": "HENNA PARA LABIOS 5GR", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 18, "name": "PINZAS CURVAS", "category": "INSUMOS DE MANICURE", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 19, "name": "PINZAS PLANAS", "category": "INSUMOS DE MANICURE", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 20, "name": "HILOS", "category": "INSUMOS DE MANICURE", "quantity": 5, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 21, "name": "EXTENSION DE PESTAÑAS 0.15 D", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 22, "name": "EXTENSION DE PESTAÑAS 0.05 D", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 23, "name": "EXTENSION DE PESTAÑAS 0.07 J", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 24, "name": "RUBORES TONO 03", "category": "INSUMOS DE MAQUILLAJE", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 25, "name": "VITAMINA A", "category": "INSUMOS DE MAQUILLAJE", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 26, "name": "PRO . COLOR 30ML", "category": "INSUMOS DE MAQUILLAJE", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 27, "name": "STAY MATTE 30 ML", "category": "INSUMOS DE MAQUILLAJE", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 28, "name": "DAMMAN 5ML", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 29, "name": "CINTA MICROPORE PEQUEÑA", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 30, "name": "GLOSS LABIAL MENTA", "category": "INSUMOS DE MAQUILLAJE", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 31, "name": "MICROPORE MEDIANO", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 32, "name": "APLICADOR DE HENNA", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 33, "name": "PALOS DE NARANJO", "category": "INSUMOS DE MANICURE", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 34, "name": "EXTENSION PESTAÑAS", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 11, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 35, "name": "APLICADORES PESTAÑAS", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 6, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 36, "name": "PAQUETES DE QUESITOS", "category": "INSUMOS DE MANICURE", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 37, "name": "POLVO SUELTO TRASLUCIDO", "category": "INSUMOS DE MAQUILLAJE", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 38, "name": "DELINEADORES EN GEL", "category": "INSUMOS DE MAQUILLAJE", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 39, "name": "FIJADOR MONTOC", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 40, "name": "HIDRATANTE DE LABIOS", "category": "INSUMOS DE MAQUILLAJE", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 41, "name": "CREMAS HIDRATANTES LUMINOSAS", "category": "INSUMOS DE MAQUILLAJE", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 42, "name": "AGUAS MICELAR 125 ML", "category": "INSUMOS DE MAQUILLAJE", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 43, "name": "PINCEL PEQUEÑO", "category": "INSUMOS DE MAQUILLAJE", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 44, "name": "AGUA DE ROSAS 250 ML", "category": "INSUMOS DE MAQUILLAJE", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 45, "name": "POMADA DE CEJAS", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 46, "name": "PALETA DE CORRECTORES", "category": "INSUMOS DE MAQUILLAJE", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 47, "name": "STRAWBERRY", "category": "INSUMOS DE MAQUILLAJE", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 48, "name": "PEGANTES PESTAÑAS", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 49, "name": "ILLUMIADOR PARA OJOS", "category": "INSUMOS DE MAQUILLAJE", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 50, "name": "LYXURY COTTON", "category": "INSUMOS DE CEJAS Y PESTAÑAS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 51, "name": "CEPILLOS PROFESIONALES", "category": "INSUMOS DE ESTILISMO", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 52, "name": "ESPUMA MOLDEADORA", "category": "INSUMOS DE PEINADOS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 53, "name": "GORROS DE SILICONA", "category": "INSUMOS DE ESTILISMO", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 54, "name": "KANEKALONES", "category": "INSUMOS DE ESTILISMO", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 55, "name": "GORROS DE ALUMINIO", "category": "INSUMOS DE ESTILISMO", "quantity": 9, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 56, "name": "POLVO DE PEINADO", "category": "INSUMOS DE ESTILISMO", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 57, "name": "COLORACION EN CREMA", "category": "INSUMOS DE ESTILISMO", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 58, "name": "CEPILLO PULIDOR", "category": "INSUMOS DE PEINADOS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 59, "name": "YELLOW COLOR 60ML", "category": "INSUMOS DE ESTILISMO", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 60, "name": "YELLOW COLOR 10 VOL - 3%", "category": "INSUMOS DE ESTILISMO", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 61, "name": "YELLOW 20 VOL - 6%", "category": "INSUMOS DE ESTILISMO", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 62, "name": "YELLOW 30 VOL - 9 %", "category": "INSUMOS DE ESTILISMO", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 63, "name": "ACONDICIONADOR 1000 ML", "category": "INSUMOS DE ESTILISMO", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 64, "name": "SHAMPOO 1000 ML", "category": "INSUMOS DE ESTILISMO", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 65, "name": "YELLOW 500 GR", "category": "INSUMOS DE ESTILISMO", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 66, "name": "TALCOS 600 GR", "category": "INSUMOS BARBERIA", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 67, "name": "TALCO 200 GR", "category": "INSUMOS BARBERIA", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 68, "name": "COOL CARE 439 GR", "category": "INSUMOS BARBERIA", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 69, "name": "COOL CLEANER 450 ML", "category": "INSUMOS BARBERIA", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 70, "name": "WYPOLL 88 PAÑOS", "category": "INSUMOS BARBERIA", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 71, "name": "WYPALL 50 PAÑOS", "category": "INSUMOS BARBERIA", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 72, "name": "EXFOLIANTES FACIAL 150 ML", "category": "INSUMOS DE MAQUILLAJE", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 73, "name": "CUELLEROS", "category": "INSUMOS BARBERIA", "quantity": 7, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 74, "name": "REFRESCANTE ANTIBACTERIAL", "category": "INSUMOS BARBERIA", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 75, "name": "GELES", "category": "INSUMOS BARBERIA", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 76, "name": "DESODORANTE PROTECTOR", "category": "INSUMOS BARBERIA", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 77, "name": "GLUTARALDEIDO", "category": "INSUMOS BARBERIA", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 78, "name": "GEL", "category": "INSUMOS BARBERIA", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 79, "name": "BARBERA", "category": "INSUMOS BARBERIA", "quantity": 3, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 80, "name": "CUCHILLAS MINORA", "category": "INSUMOS BARBERIA", "quantity": 4, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 81, "name": "ROLLOS PAPEL ALUMINIO", "category": "INSUMOS BARBERIA", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 82, "name": "PELUCHIN", "category": "INSUMOS BARBERIA", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 83, "name": "PAQUETE CUCHILLAS DE DEPILAR X10", "category": "INSUMOS BARBERIA", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 84, "name": "MATIZANTE VIOLETA", "category": "INSUMOS DE ESTILISMO", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 85, "name": "ATOMIZADOR", "category": "INSUMOS BARBERIA", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 86, "name": "ACTIVADOR COLOR VERDE 25 ML", "category": "INSUMOS DE ESTILISMO", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 87, "name": "SHAMPOO 3800 ML", "category": "INSUMOS DE ESTILISMO", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 88, "name": "BOBBY PINS", "category": "INSUMOS DE ESTILISMO", "quantity": 2, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 89, "name": "PAQUETES CAUCHITOS", "category": "INSUMOS DE ESTILISMO", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 90, "name": "PAQUETE PIEDRERIA PARA PEINADOS", "category": "INSUMOS DE ESTILISMO", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 91, "name": "PAQUETE COCODRILO", "category": "INSUMOS DE ESTILISMO", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}, {"id": 92, "name": "MICROLINE SILICONADO", "category": "INSUMOS DE PEINADOS", "quantity": 1, "unit": "und", "minStock": 0, "notes": "", "photo": null}];
 
 /* ---------- Firebase Realtime Database (compartida con todo el equipo) ---------- */
 const firebaseConfig = {
@@ -417,8 +453,97 @@ function nextId(){
   return products.reduce((m,p)=>Math.max(m,p.id),0) + 1;
 }
 
+const FIXED_CATEGORIES = [
+  "KITS POR CURSOS",
+  "CARTILLAS",
+  "CAMISA MUJER",
+  "CAMISAS HOMBRE",
+  "SETS POR CURSO",
+  "INSUMOS DE ASEO",
+  "INSUMOS DE MAQUILLAJE",
+  "INSUMOS DE MANICURE",
+  "INSUMOS DE PEINADOS",
+  "INSUMOS BARBERIA",
+  "INSUMOS DE ESTILISMO",
+  "INSUMOS DE CEJAS Y PESTAÑAS"
+];
+
 function uniqueCategories(){
-  return [...new Set(products.map(p=>p.category).filter(Boolean))].sort();
+  const fromProducts = products.map(p=>p.category).filter(Boolean);
+  return [...new Set([...FIXED_CATEGORIES, ...fromProducts])];
+}
+
+const CATEGORY_MIGRATION_MAP = {
+  // Nombres antiguos (antes de estandarizar) -> nombres nuevos definitivos
+  "MANICURE": "INSUMOS DE MANICURE",
+  "MANICURE Y UÑAS": "INSUMOS DE MANICURE",
+  "CEJAS Y PESTAÑAS": "INSUMOS DE CEJAS Y PESTAÑAS",
+  "MAQUILLAJE": "INSUMOS DE MAQUILLAJE",
+  "MAQUILLAJE Y FACIAL": "INSUMOS DE MAQUILLAJE",
+  "INSUMOS MAQUILLAJE": "INSUMOS DE MAQUILLAJE",
+  "BARBERIA": "INSUMOS BARBERIA",
+  "BARBERÍA": "INSUMOS BARBERIA",
+  "ESTILISMO": "INSUMOS DE ESTILISMO",
+  "CABELLO Y COLORACIÓN": "INSUMOS DE ESTILISMO",
+  "CABELLO Y COLORACION": "INSUMOS DE ESTILISMO",
+  "PEINADOS": "INSUMOS DE PEINADOS",
+  "PEINADOS Y RIZOS": "INSUMOS DE PEINADOS",
+  "INSUMOS GENERALES": "INSUMOS DE ASEO",
+  "KITS POR CURSO": "KITS POR CURSOS",
+  "UNIFORMES - CAMISA MUJER": "CAMISA MUJER",
+  "UNIFORMES - CAMISA HOMBRE": "CAMISAS HOMBRE",
+  "CAMISAS": "CAMISA MUJER",
+  "SETS DE SERVICIO": "SETS POR CURSO",
+};
+
+const NAME_KEYWORD_RULES = [
+  [["ESMALTE","UÑA","UNA ","ACRILIC","MONOMERO","CUTICULA","MANICURE","PEDICURE","LIMA ","PUSHER","TOP COAT","BASE COAT","GEL POLISH","MORTERO","RUBBER","POLI GEL","BLOQUE PULIDOR","GUIYOTINA","GUILLOTINA","DUAL SYSTEM","REMOVEDOR","CORTA UÑA","SIRENA","STIKER","PIEDRA AZUCAR","RECIPIENTE","PULIDOR","PINZA","QUESITO","HILO","PALO DE NARANJ","LAMPARA UV"], "INSUMOS DE MANICURE"],
+  [["PESTAÑA","CEJA","HENNA","HENA","BLISTER","PARCHE","DAMMAN","MICROPORE"], "INSUMOS DE CEJAS Y PESTAÑAS"],
+  [["MAQUILLAJE","BASE MATE","CORRECTOR","BORLA","PALETA","BROCHA","MINI SPONGE","AGUA DE ROSA","POLVO TRASLUCIDO","LIP SERUM","DESMAQUILLANTE","RUBOR","PRIMER","AGUA MISELAR","CREMA HIDRATANTE","ILUMINADOR","GLOSS"], "INSUMOS DE MAQUILLAJE"],
+  [["BARBERIA","BARBERA","PATILLERA","MAQUINA WAHL","SHAVER","GEL AFEITAR","AFTER","COOL CARE","NISH MAN","BLACK MASK","TALCO","COLONIA","CUCHILLA","CUELLERO"], "INSUMOS BARBERIA"],
+  [["TINTE","MATIZANTE","SHAMPOO","BALSAMO","PEROXIDO","OXIGENTA","BLONDOR","CAPAS ANTIFLUIDO","GORROS DE SILICONA","GORROS DE ALUMINIO","YELLOW","KANEKALON","COLORACION"], "INSUMOS DE ESTILISMO"],
+  [["RULO","BIGUDI","MICROLINE","ESPUMA MOLDEADORA","GANCHOS","CEPILLO PULIDOR","PIEDRERIA","CABEZOTE","SECADOR","PLANCHA","ACONDICIONADOR","BOBBY PIN"], "INSUMOS DE PEINADOS"],
+  [["CAMISA MUJER"], "CAMISA MUJER"],
+  [["CAMISA HOMBRE"], "CAMISAS HOMBRE"],
+  [["KIT "], "KITS POR CURSOS"],
+  [["SET "], "SETS POR CURSO"],
+  [["CARTILLA"], "CARTILLAS"],
+  [["JABON","GUANTES","BOLSAS","PISO MADERA","TOALLAS DE MANOS","CAFE","LIMPIA VIDRIOS","CLOROX","DETERGENTE","PAÑOS WYPALL","WYPALL","WYPOLL","EXFOLIANTE FACIAL","GLUTARALDEIDO","DESODORANTE PROTECTOR","REFRESCANTE ANTIBACTERIAL"], "INSUMOS DE ASEO"],
+];
+
+function guessCategoryByName(name){
+  const n = (name || '').toUpperCase();
+  for(const [keywords, cat] of NAME_KEYWORD_RULES){
+    for(const kw of keywords){
+      if(n.includes(kw)) return cat;
+    }
+  }
+  return null;
+}
+
+async function fixOldCategories(){
+  const toFix = [];
+  products.forEach(p => {
+    if(FIXED_CATEGORIES.includes(p.category)) return; // ya es válida, no tocar
+    const cat = (p.category || '').toUpperCase().trim();
+    let newCat = CATEGORY_MIGRATION_MAP[cat] || guessCategoryByName(p.name);
+    if(newCat && newCat !== p.category){
+      toFix.push({ id: p.id, newCat });
+    }
+  });
+  if(toFix.length === 0){
+    showToast('No se encontraron categorías para corregir');
+    return;
+  }
+  if(!confirm(`Se van a corregir ${toFix.length} producto(s) cuya categoría no coincide con las 11 válidas. ¿Continuar?`)) return;
+  try{
+    const updates = {};
+    toFix.forEach(({id, newCat}) => { updates[`${id}/category`] = newCat; });
+    await dbRef.update(updates);
+    showToast(`${toFix.length} producto(s) corregido(s)`);
+  }catch(err){
+    showToast('No se pudo corregir (revisa tu conexión)');
+  }
 }
 
 function isLow(p){
@@ -453,8 +578,11 @@ function renderCategoryFilter(){
     cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
   sel.value = cats.includes(current) ? current : 'all';
 
-  const datalist = el('categoryOptions');
-  datalist.innerHTML = cats.map(c=>`<option value="${escapeHtml(c)}">`).join('');
+  const fCat = el('fCategory');
+  if(fCat && !fCat.dataset.filled){
+    fCat.innerHTML = FIXED_CATEGORIES.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    fCat.dataset.filled = '1';
+  }
 }
 
 function renderGrid(){
@@ -494,6 +622,7 @@ function renderGrid(){
       <div class="card-body">
         <div class="card-cat">${escapeHtml(p.category || 'Sin categoría')}</div>
         <div class="card-name">${escapeHtml(p.name)}</div>
+        ${p.invimaCode ? `<div class="card-iva">INVIMA: ${escapeHtml(p.invimaCode)}</div>` : ''}
         <div class="qty-row">
           <button class="qbtn" data-action="dec" data-id="${p.id}">−</button>
           <span class="qval">${p.quantity} <small style="font-weight:400;color:var(--text-soft);">${escapeHtml(p.unit||'')}</small></span>
@@ -509,9 +638,21 @@ function escapeHtml(str){
 }
 
 /* ---------- Cantidad rápida +/- (transacción atómica: segura si dos personas tocan a la vez) ---------- */
+let pendingDec = null; // {id, product}
+
 async function changeQty(id, delta){
   const p = products.find(p=>p.id===id);
   if(!p) return;
+  if(delta < 0){
+    // Pedir a quién se entrega antes de restar
+    pendingDec = { id, product: p };
+    el('recipientProductLabel').textContent = p.name;
+    el('recipientName').value = '';
+    el('recipientError').style.display = 'none';
+    el('recipientOverlay').classList.add('open');
+    setTimeout(()=> el('recipientName').focus(), 50);
+    return;
+  }
   try{
     await dbRef.child(String(id)).child('quantity').transaction(current => Math.max(0, (current||0) + delta));
   }catch(err){
@@ -519,19 +660,80 @@ async function changeQty(id, delta){
   }
 }
 
+async function confirmDelivery(){
+  const name = el('recipientName').value.trim();
+  if(!name){
+    el('recipientError').style.display = 'block';
+    return;
+  }
+  if(!pendingDec) return;
+  const { id } = pendingDec;
+  try{
+    await dbRef.child(String(id)).child('quantity').transaction(current => Math.max(0, (current||0) - 1));
+    await dbRef.child(String(id)).child('history').push({
+      date: Date.now(),
+      delta: -1,
+      recipient: name
+    });
+    showToast('Entrega registrada');
+  }catch(err){
+    showToast('No se pudo registrar (revisa tu conexión)');
+  }
+  pendingDec = null;
+  el('recipientOverlay').classList.remove('open');
+}
+
+function cancelDelivery(){
+  pendingDec = null;
+  el('recipientOverlay').classList.remove('open');
+}
+
+function loadHistory(productId){
+  const wrap = el('historyWrap');
+  const list = el('historyList');
+  if(!productId){
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'block';
+  list.innerHTML = '<div style="color:var(--text-soft);">Cargando historial...</div>';
+  dbRef.child(String(productId)).child('history').orderByChild('date').limitToLast(50).once('value', snapshot => {
+    const entries = [];
+    snapshot.forEach(child => { entries.push(child.val()); });
+    entries.reverse();
+    if(entries.length === 0){
+      list.innerHTML = '<div style="color:var(--text-soft);">Sin entregas registradas todavía.</div>';
+      return;
+    }
+    list.innerHTML = entries.map(h => {
+      const d = new Date(h.date);
+      const fecha = d.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'numeric'}) + ' ' + d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
+      return `<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;">
+        <span>${escapeHtml(fecha)}</span>
+        <span style="color:var(--danger);font-weight:600;">${h.delta}</span>
+        <span style="text-align:right;flex:1;">${escapeHtml(h.recipient||'')}</span>
+      </div>`;
+    }).join('');
+  }, err => {
+    list.innerHTML = '<div style="color:var(--danger);">No se pudo cargar el historial.</div>';
+  });
+}
+
 /* ---------- Modal ---------- */
 function openModal(product){
   editingId = product ? product.id : null;
-  currentPhoto = product ? product.photo : null;
+  currentPhoto = (product && product.photo) ? product.photo : null;
   el('modalTitle').textContent = product ? 'Editar producto' : 'Nuevo producto';
   el('fName').value = product ? product.name : '';
-  el('fCategory').value = product ? product.category : '';
+  el('fCategory').value = product ? product.category : FIXED_CATEGORIES[0];
   el('fUnit').value = product ? product.unit : 'und';
   el('fQty').value = product ? product.quantity : 0;
   el('fMin').value = product ? product.minStock : 0;
+  el('fInvima').value = product ? (product.invimaCode || '') : '';
   el('fNotes').value = product ? product.notes : '';
   el('deleteBtn').style.display = product ? 'inline-flex' : 'none';
   updatePhotoPreview();
+  loadHistory(editingId);
   el('overlay').classList.add('open');
 }
 function closeModal(){
@@ -591,6 +793,7 @@ async function saveProduct(){
     unit: el('fUnit').value.trim() || 'und',
     quantity: Math.max(0, Number(el('fQty').value) || 0),
     minStock: Math.max(0, Number(el('fMin').value) || 0),
+    invimaCode: el('fInvima').value.trim(),
     notes: el('fNotes').value.trim(),
     photo: currentPhoto
   };
@@ -632,9 +835,9 @@ function exportJson(){
 }
 
 function exportCsv(){
-  const header = ['Nombre','Categoría','Cantidad','Unidad','Alerta stock bajo','Notas','Tiene foto'];
+  const header = ['Nombre','Categoría','Cantidad','Unidad','Alerta stock bajo','Registro INVIMA','Notas','Tiene foto'];
   const rows = products.map(p => [
-    p.name, p.category, p.quantity, p.unit, p.minStock, p.notes, p.photo ? 'Sí' : 'No'
+    p.name, p.category, p.quantity, p.unit, p.minStock, p.invimaCode || '', p.notes, p.photo ? 'Sí' : 'No'
   ]);
   const csv = [header, ...rows].map(r =>
     r.map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(',')
@@ -698,6 +901,11 @@ function bindEvents(){
   el('deleteBtn').addEventListener('click', deleteProduct);
   el('overlay').addEventListener('click', e => { if(e.target.id === 'overlay') closeModal(); });
 
+  el('recipientConfirmBtn').addEventListener('click', confirmDelivery);
+  el('recipientCancelBtn').addEventListener('click', cancelDelivery);
+  el('recipientOverlay').addEventListener('click', e => { if(e.target.id === 'recipientOverlay') cancelDelivery(); });
+  el('recipientName').addEventListener('keydown', e => { if(e.key === 'Enter') confirmDelivery(); });
+
   el('photoDrop').addEventListener('click', () => el('photoInput').click());
   el('changePhotoBtn').addEventListener('click', e => { e.stopPropagation(); el('photoInput').click(); });
   el('removePhotoBtn').addEventListener('click', e => { e.stopPropagation(); currentPhoto = null; updatePhotoPreview(); });
@@ -716,6 +924,7 @@ function bindEvents(){
     if(!e.target.closest('.menu-wrap')) el('menu').classList.remove('open');
   });
   el('exportJsonBtn').addEventListener('click', exportJson);
+  el('fixCategoriesBtn').addEventListener('click', fixOldCategories);
   el('exportCsvBtn').addEventListener('click', exportCsv);
   el('importInput').addEventListener('change', e => { if(e.target.files[0]) importJson(e.target.files[0]); e.target.value=''; });
 
