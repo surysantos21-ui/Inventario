@@ -329,8 +329,8 @@ header p{
       </div>
     </div>
     <div class="field">
-      <label>Código de Registro IVA</label>
-      <input type="text" id="fIvaCode" placeholder="Ej: IVA-19-001">
+      <label>Registro INVIMA</label>
+      <input type="text" id="fInvima" placeholder="Ej: INVIMA NSO12345">
     </div>
     <div class="field">
       <label>Notas</label>
@@ -622,7 +622,7 @@ function renderGrid(){
       <div class="card-body">
         <div class="card-cat">${escapeHtml(p.category || 'Sin categoría')}</div>
         <div class="card-name">${escapeHtml(p.name)}</div>
-        ${p.ivaCode ? `<div class="card-iva">IVA: ${escapeHtml(p.ivaCode)}</div>` : ''}
+        ${p.invimaCode ? `<div class="card-iva">INVIMA: ${escapeHtml(p.invimaCode)}</div>` : ''}
         <div class="qty-row">
           <button class="qbtn" data-action="dec" data-id="${p.id}">−</button>
           <span class="qval">${p.quantity} <small style="font-weight:400;color:var(--text-soft);">${escapeHtml(p.unit||'')}</small></span>
@@ -729,7 +729,7 @@ function openModal(product){
   el('fUnit').value = product ? product.unit : 'und';
   el('fQty').value = product ? product.quantity : 0;
   el('fMin').value = product ? product.minStock : 0;
-  el('fIvaCode').value = product ? (product.ivaCode || '') : '';
+  el('fInvima').value = product ? (product.invimaCode || '') : '';
   el('fNotes').value = product ? product.notes : '';
   el('deleteBtn').style.display = product ? 'inline-flex' : 'none';
   updatePhotoPreview();
@@ -793,7 +793,7 @@ async function saveProduct(){
     unit: el('fUnit').value.trim() || 'und',
     quantity: Math.max(0, Number(el('fQty').value) || 0),
     minStock: Math.max(0, Number(el('fMin').value) || 0),
-    ivaCode: el('fIvaCode').value.trim(),
+    invimaCode: el('fInvima').value.trim(),
     notes: el('fNotes').value.trim(),
     photo: currentPhoto
   };
@@ -835,9 +835,9 @@ function exportJson(){
 }
 
 function exportCsv(){
-  const header = ['Nombre','Categoría','Cantidad','Unidad','Alerta stock bajo','Código Registro IVA','Notas','Tiene foto'];
+  const header = ['Nombre','Categoría','Cantidad','Unidad','Alerta stock bajo','Registro INVIMA','Notas','Tiene foto'];
   const rows = products.map(p => [
-    p.name, p.category, p.quantity, p.unit, p.minStock, p.ivaCode || '', p.notes, p.photo ? 'Sí' : 'No'
+    p.name, p.category, p.quantity, p.unit, p.minStock, p.invimaCode || '', p.notes, p.photo ? 'Sí' : 'No'
   ]);
   const csv = [header, ...rows].map(r =>
     r.map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(',')
@@ -935,3 +935,4 @@ init();
 </script>
 </body>
 </html>
+
